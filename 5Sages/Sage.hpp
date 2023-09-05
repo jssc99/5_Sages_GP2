@@ -14,15 +14,38 @@ enum Status
 	eating = 'E',
 	finished = 'F',
 };
+/*
+struct Chopstick
+{
+	bool isFree = true;
+	std::mutex mtx;
 
+	bool getChopstick()
+	{
+		if (isFree && mtx.try_lock()) {
+			isFree = false;
+			mtx.unlock();
+			return true;
+		}
+		else
+			return false;
+	}
+	void freeChopstick()
+	{
+		mtx.lock();
+		isFree = true;
+		mtx.unlock();
+	}
+};
+*/
 class Sage
 {
 public:
-	unsigned long id = 0;
+	Sage() {};
+	~Sage() {};
 
+	unsigned long id = 0;
 	Status status = thinking;
-	bool hasFreeChopstick = true;
-	bool* chopstickRight = nullptr;
 
 	std::chrono::duration<double> timerThink{ 0 };
 	double thinkTime = 0.f;
@@ -35,14 +58,20 @@ public:
 	double timerEatingTotal = 0.f;
 	double eatTime = 0.f;
 
-	std::thread start(bool& chopstickRight, std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
+	std::thread start(Sage* sageRight, std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
+
+	bool getChopstick();
+	void freeChopstick();
 
 private:
 	std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
 	HANDLE* hConsole = nullptr;
-	std::mutex* mtxPrint = nullptr;
+	std::mutex* mutex = nullptr;
+	Sage* nextSage = nullptr;
 
 	bool showText = true;
+
+	bool isChopstickFree = true;
 
 	bool isThinking = true;
 	bool isWaiting = false;

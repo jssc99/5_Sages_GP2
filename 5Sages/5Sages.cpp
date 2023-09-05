@@ -6,7 +6,6 @@
 #include <string>
 #include <windows.h>
 
-#include "Sage.hpp"
 #include "App.hpp"
 
 int main()
@@ -23,7 +22,8 @@ int main()
 		app->sages[id].sageEatingTimeMax = app->sageEatingTimeMax;
 
 		app->sagesThrds[id] = app->sages[id].start(
-			app->sages[(id + 1) % app->nbSages].hasFreeChopstick, app->mtxPrint, app->hConsole, app->displaySageText);
+			&app->sages[(id + 1) % app->nbSages], 
+			app->mutex, app->hConsole, app->displaySageText);
 	}
 
 	std::thread statusPrint = app->startStatusPrint();

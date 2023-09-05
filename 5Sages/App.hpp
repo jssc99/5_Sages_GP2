@@ -4,6 +4,8 @@
 #include <thread>
 #include <iostream>
 
+#include "Sage.hpp"
+
 using std::cout;
 using std::cin;
 
@@ -14,8 +16,9 @@ public:
 	{
 		getSageValues();
 	};
+	~App() {};
 
-	std::mutex mtxPrint;
+	std::mutex mutex;
 	HANDLE hConsole;
 	bool displaySageText = true;
 
@@ -40,7 +43,7 @@ private:
 
 inline std::thread App::startStatusPrint()
 {
-	cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished | " << std::endl;
+	cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished | \n" << std::endl;
 	return std::thread([this] { printSagesStatus(); }); // Googled
 }
 
@@ -86,7 +89,7 @@ inline void App::printSagesStatus()
 	{
 		unsigned long hasFinished = 0;
 
-		mtxPrint.lock();
+		mutex.lock();
 		cout << '\n' << "Status =  ( ";
 		for (unsigned long id = 0; id < nbSages; id++) {
 			if (sages[id].status == finished) hasFinished++;
@@ -97,7 +100,7 @@ inline void App::printSagesStatus()
 
 		SetConsoleTextAttribute(hConsole, 7);
 		cout << ")" << '\n' << std::endl;
-		mtxPrint.unlock();
+		mutex.unlock();
 
 		if (hasFinished == nbSages)
 			return;
