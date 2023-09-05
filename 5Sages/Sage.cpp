@@ -1,10 +1,11 @@
 #include "Sage.hpp"
 
-std::thread Sage::start(bool& chopstickRight, std::mutex& mtxPrint, HANDLE& hConsole)
+std::thread Sage::start(bool& chopstickRight, std::mutex& mtxPrint, HANDLE& hConsole, bool showText)
 {
 	this->chopstickRight = &chopstickRight;
 	this->mtxPrint = &mtxPrint;
 	this->hConsole = &hConsole;
+	this->showText = showText;
 
 	return std::thread([this] { behaviourUpdate(); }); // Googled
 }
@@ -103,9 +104,12 @@ void Sage::bEating()
 
 void Sage::print(std::string txt)
 {
-	mtxPrint->lock();
-	SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
-	std::cout << "Sage " << id << txt << std::endl;
-	SetConsoleTextAttribute(*hConsole, 7);
-	mtxPrint->unlock();
+	if (showText)
+	{
+		mtxPrint->lock();
+		SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
+		std::cout << "Sage " << id << txt << std::endl;
+		SetConsoleTextAttribute(*hConsole, 7);
+		mtxPrint->unlock();
+	}
 }

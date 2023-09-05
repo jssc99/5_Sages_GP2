@@ -10,21 +10,23 @@ using std::cin;
 class App
 {
 public:
-	App(HANDLE console) : hConsole(console) 
+	App(HANDLE console) : hConsole(console)
 	{
 		getSageValues();
 	};
 
 	std::mutex mtxPrint;
 	HANDLE hConsole;
+	bool displaySageText = true;
 
 	std::vector<Sage> sages;
 	std::vector<std::thread> sagesThrds;
 	unsigned long nbSages = 0;
 
 	unsigned long sageThinkTimeMin = 2; // old default values
-	unsigned long sageEatingTotalTime = 5;
 	unsigned long sageThinkTimeMax = 5;
+
+	unsigned long sageEatingTotalTime = 5;
 	unsigned long sageEatingTimeMin = 1;
 	unsigned long sageEatingTimeMax = 5;
 
@@ -38,34 +40,47 @@ private:
 
 inline std::thread App::startStatusPrint()
 {
+	cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished | " << std::endl;
 	return std::thread([this] { printSagesStatus(); }); // Googled
 }
 
 inline void App::getSageValues()
 {
-	cout << "Enter nb of sages : ";
+	cout << "Enter nb of sages: ";
 	cin >> nbSages;
 
 	sages.resize(nbSages);
 	sagesThrds.resize(nbSages);
 
-	cout << "Enter sage min thinking time : ";
+	cout << "Enter sage minimum thinking time: ";
 	cin >> sageThinkTimeMin;
-	cout << "Enter sage max thinking time : ";
+	cout << "Enter sage maximum thinking time: ";
 	cin >> sageThinkTimeMax;
 
-	cout << "Enter sage TOTAL eating time : ";
+	cout << "Enter sage TOTAL eating time: ";
 	cin >> sageEatingTotalTime;
 
-	cout << "Enter sage min eating time : ";
+	cout << "Enter sage minimum eating time: ";
 	cin >> sageEatingTimeMin;
-	cout << "Enter sage max eating time : ";
+	cout << "Enter sage maximum eating time: ";
 	cin >> sageEatingTimeMax;
+
+	cout << "Do you want to display every Sage actions ? y/n: ";
+	char displayText;
+	cin >> displayText;
+	if (displayText == 'n')
+		displaySageText = false;
+	else
+	{
+		if (displayText != 'y')
+			cout << "Wrong input, text will be showned.";
+		displaySageText = true;
+	}
 
 	cout << std::endl;
 }
 
-void App::printSagesStatus()
+inline void App::printSagesStatus()
 {
 	while (true)
 	{
@@ -84,9 +99,9 @@ void App::printSagesStatus()
 		cout << ")" << '\n' << std::endl;
 		mtxPrint.unlock();
 
-		if (hasFinished == nbSages) 
+		if (hasFinished == nbSages)
 			return;
 		else
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 }

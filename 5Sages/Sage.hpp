@@ -35,12 +35,14 @@ public:
 	double timerEatingTotal = 0.f;
 	double eatTime = 0.f;
 
-	std::thread start(bool& chopstickRight, std::mutex& mtxPrint, HANDLE& hConsole);
+	std::thread start(bool& chopstickRight, std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
 
 private:
 	std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
 	HANDLE* hConsole = nullptr;
 	std::mutex* mtxPrint = nullptr;
+
+	bool showText = true;
 
 	bool isThinking = true;
 	bool isWaiting = false;
@@ -50,6 +52,6 @@ private:
 	void bThinking();
 	void bWaiting();
 	void bEating();
-	
+
 	void print(std::string txt);
 };

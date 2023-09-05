@@ -9,17 +9,11 @@
 #include "Sage.hpp"
 #include "App.hpp"
 
-using std::thread;
-using std::cout;
-using std::cin;
-using std::endl;
-using std::ref;
-
 int main()
 {
-	App *app = new App(GetStdHandle(STD_OUTPUT_HANDLE));
+	App* app = new App(GetStdHandle(STD_OUTPUT_HANDLE));
 
-	for (unsigned int id = 0; id < app->nbSages; id++) {
+	for (unsigned long id = 0; id < app->nbSages; id++) {
 		app->sages[id].id = id + 1;
 
 		app->sages[id].thinkTime = (float)(rand() % app->sageThinkTimeMax + app->sageThinkTimeMin);
@@ -28,16 +22,14 @@ int main()
 		app->sages[id].sageEatingTimeMin = app->sageEatingTimeMin;
 		app->sages[id].sageEatingTimeMax = app->sageEatingTimeMax;
 
-		thread tmp = app->sages[id].start(
-			app->sages[(id + 1) % app->nbSages].hasFreeChopstick, app->mtxPrint, app->hConsole);
-
-		app->sagesThrds[id] = std::move(tmp);
+		app->sagesThrds[id] = app->sages[id].start(
+			app->sages[(id + 1) % app->nbSages].hasFreeChopstick, app->mtxPrint, app->hConsole, app->displaySageText);
 	}
 
-	thread statusPrint = app->startStatusPrint();
+	std::thread statusPrint = app->startStatusPrint();
 	statusPrint.join();
 
-	for (unsigned int id = 0; id < app->nbSages; id++)
+	for (unsigned long id = 0; id < app->nbSages; id++)
 		app->sagesThrds[id].join();
 
 	SetConsoleTextAttribute(app->hConsole, 7);
