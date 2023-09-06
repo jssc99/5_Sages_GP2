@@ -6,6 +6,9 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <iomanip>
+
+#include "Chopstick.hpp"
 
 enum Status
 {
@@ -14,30 +17,7 @@ enum Status
 	eating = 'E',
 	finished = 'F',
 };
-/*
-struct Chopstick
-{
-	bool isFree = true;
-	std::mutex mtx;
 
-	bool getChopstick()
-	{
-		if (isFree && mtx.try_lock()) {
-			isFree = false;
-			mtx.unlock();
-			return true;
-		}
-		else
-			return false;
-	}
-	void freeChopstick()
-	{
-		mtx.lock();
-		isFree = true;
-		mtx.unlock();
-	}
-};
-*/
 class Sage
 {
 public:
@@ -58,16 +38,16 @@ public:
 	double timerEatingTotal = 0.f;
 	double eatTime = 0.f;
 
-	std::thread start(Sage* sageRight, std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
-
-	bool getChopstick();
-	void freeChopstick();
+	std::thread start(Chopstick* chopstick, Chopstick* nextChopstick,
+		std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
 
 private:
 	std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
 	HANDLE* hConsole = nullptr;
-	std::mutex* mutex = nullptr;
-	Sage* nextSage = nullptr;
+	std::mutex* mtxPrint = nullptr;
+
+	Chopstick* chopstick = nullptr;
+	Chopstick* nextChopstick = nullptr;
 
 	bool showText = true;
 

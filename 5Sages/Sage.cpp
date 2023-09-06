@@ -1,27 +1,11 @@
 #include "Sage.hpp"
 
-bool Sage::getChopstick()
+std::thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
+	std::mutex& mtxPrint, HANDLE& hConsole, bool showText)
 {
-	if (isChopstickFree&& mutex->try_lock()) {
-		isChopstickFree = false;
-		mutex->unlock();
-		return true;
-	}
-	else
-		return false;
-}
-
-void Sage::freeChopstick()
-{
-	mutex->lock();
-	isChopstickFree = true;
-	mutex->unlock();
-}
-
-std::thread Sage::start(Sage* sageRight, std::mutex& mutex, HANDLE& hConsole, bool showText)
-{
-	this->nextSage = sageRight;
-	this->mutex = &mutex;
+	this->chopstick = chopstick;
+	this->nextChopstick = nextChopstick;
+	this->mtxPrint = &mtxPrint;
 	this->hConsole = &hConsole;
 	this->showText = showText;
 
@@ -54,7 +38,7 @@ void Sage::bThinking()
 	}
 	else
 	{
-		print(" is thinking for " + std::to_string(timerThink.count()) + "s");
+		print(" has been thinking for " + std::to_string(timerThink.count()) + "s");
 
 		timerThink += sleepTime;
 	}
@@ -62,10 +46,10 @@ void Sage::bThinking()
 
 void Sage::bWaiting()
 {
-	if (getChopstick())
+	if (chopstick->getChopstick())
 	{
-		if (nextSage->getChopstick()) {
-			print(" has got two chopsticks");
+		if (nextChopstick->getChopstick()) {
+			print(" has got their two chopsticks");
 
 			isWaiting = false;
 			isEating = true;
@@ -77,12 +61,13 @@ void Sage::bWaiting()
 		}
 		else
 		{
-			freeChopstick();
+			print(" is waiting (next sage doesnt have their chopstick free)");
+			chopstick->freeChopstick();
 		}
 	}
 	else
 	{
-		print(" is waiting");
+		print(" is waiting, they dont have their chopstick");
 	}
 }
 
@@ -92,8 +77,8 @@ void Sage::bEating()
 	{
 		isEating = false;
 
-		freeChopstick();
-		nextSage->freeChopstick();
+		chopstick->freeChopstick();
+		nextChopstick->freeChopstick();
 
 		timerEatingTotal += timerEating.count();
 
@@ -116,7 +101,7 @@ void Sage::bEating()
 	}
 	else
 	{
-		print(" is eating for " + std::to_string(timerEating.count()) + "s");
+		print(" has been eating for " + std::to_string(timerEating.count()) + "s");
 
 		timerEating += sleepTime;
 	}
@@ -126,11 +111,11 @@ void Sage::print(std::string txt)
 {
 	if (showText)
 	{
-		mutex->lock();
+		mtxPrint->lock();
 		SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
-		std::cout << "Sage " << id;
+		std::cout << "Sage " << std::setw(3) << id;
 		SetConsoleTextAttribute(*hConsole, 7);
 		std::cout << txt << std::endl;
-		mutex->unlock();
+		mtxPrint->unlock();
 	}
 }

@@ -24,6 +24,8 @@ public:
 
 	std::vector<Sage> sages;
 	std::vector<std::thread> sagesThrds;
+	std::vector<Chopstick> chopsticks;
+	std::vector<std::thread> chopsticksThrds;
 	unsigned long nbSages = 0;
 
 	unsigned long sageThinkTimeMin = 2; // old default values
@@ -43,7 +45,9 @@ private:
 
 inline std::thread App::startStatusPrint()
 {
+	mutex.lock();
 	cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished | \n" << std::endl;
+	mutex.unlock();
 	return std::thread([this] { printSagesStatus(); }); // Googled
 }
 
@@ -54,6 +58,9 @@ inline void App::getSageValues()
 
 	sages.resize(nbSages);
 	sagesThrds.resize(nbSages);
+
+	chopsticks.resize(nbSages);
+	chopsticksThrds.resize(nbSages);
 
 	cout << "Enter sage minimum thinking time: ";
 	cin >> sageThinkTimeMin;
@@ -76,7 +83,7 @@ inline void App::getSageValues()
 	else
 	{
 		if (displayText != 'y')
-			cout << "Wrong input, text will be showned.";
+			cout << "Wrong input, text will be showned by default.";
 		displaySageText = true;
 	}
 
@@ -102,8 +109,11 @@ inline void App::printSagesStatus()
 		cout << ")" << '\n' << std::endl;
 		mutex.unlock();
 
-		if (hasFinished == nbSages)
+		if (hasFinished == nbSages) {
+			for (unsigned long id = 0; id < nbSages; id++)
+				chopsticks[id].kill = true;
 			return;
+		}
 		else
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
