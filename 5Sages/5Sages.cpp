@@ -12,24 +12,19 @@ int main()
 {
 	App* app = new App(GetStdHandle(STD_OUTPUT_HANDLE));
 
-	for (unsigned long id = 0; id < app->nbSages; id++)
+	for (unsigned long id = 0; id < app->nbSages; id++) {
 		app->chopsticksThrds[id] = app->chopsticks[id].start();
 
-	for (unsigned long id = 0; id < app->nbSages; id++) {
-		app->sages[id].id = id + 1;
+		Sage* sage = &app->sages[id];
+		sage->id = id + 1;
+		sage->setEatingVars(app->sageEatingTotalTime, app->sageEatingTimeMin, app->sageEatingTimeMax);
+		sage->setThinkingTime(app->sageThinkTimeMax, app->sageThinkTimeMin);
 
-		app->sages[id].thinkTime = (float)(rand() % app->sageThinkTimeMax + app->sageThinkTimeMin);
-
-		app->sages[id].sageEatingTotalTime = app->sageEatingTotalTime;
-		app->sages[id].sageEatingTimeMin = app->sageEatingTimeMin;
-		app->sages[id].sageEatingTimeMax = app->sageEatingTimeMax;
-
-		app->sagesThrds[id] = app->sages[id].start( &app->chopsticks[id],
-			&app->chopsticks[(id + 1) % app->nbSages], app->mutex, app->hConsole, app->displaySageText);
+		app->sagesThrds[id] = app->sages[id].start(&app->chopsticks[id],
+			&app->chopsticks[(id + 1) % app->nbSages], app->mtxPrint, app->hConsole, app->displaySageText);
 	}
 
-	std::thread statusPrint = app->startStatusPrint();
-	statusPrint.join();
+	app->startStatusPrint().join();
 
 	for (unsigned long id = 0; id < app->nbSages; id++) {
 		app->sagesThrds[id].join();

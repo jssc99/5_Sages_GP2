@@ -15,10 +15,10 @@ public:
 	App(HANDLE console) : hConsole(console)
 	{
 		getSageValues();
-	};
-	~App() {};
+	}
+	~App() {}
 
-	std::mutex mutex;
+	std::mutex mtxPrint;
 	HANDLE hConsole;
 	bool displaySageText = true;
 
@@ -45,9 +45,6 @@ private:
 
 inline std::thread App::startStatusPrint()
 {
-	mutex.lock();
-	cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished | \n" << std::endl;
-	mutex.unlock();
 	return std::thread([this] { printSagesStatus(); }); // Googled
 }
 
@@ -62,17 +59,17 @@ inline void App::getSageValues()
 	chopsticks.resize(nbSages);
 	chopsticksThrds.resize(nbSages);
 
-	cout << "Enter sage minimum thinking time: ";
+	cout << "Enter sage minimum thinking time (sec): ";
 	cin >> sageThinkTimeMin;
-	cout << "Enter sage maximum thinking time: ";
+	cout << "Enter sage maximum thinking time (sec): ";
 	cin >> sageThinkTimeMax;
 
-	cout << "Enter sage TOTAL eating time: ";
+	cout << "Enter sage TOTAL eating time (sec): ";
 	cin >> sageEatingTotalTime;
 
-	cout << "Enter sage minimum eating time: ";
+	cout << "Enter sage minimum eating time (sec): ";
 	cin >> sageEatingTimeMin;
-	cout << "Enter sage maximum eating time: ";
+	cout << "Enter sage maximum eating time (sec): ";
 	cin >> sageEatingTimeMax;
 
 	cout << "Do you want to display every Sage actions ? y/n: ";
@@ -83,7 +80,7 @@ inline void App::getSageValues()
 	else
 	{
 		if (displayText != 'y')
-			cout << "Wrong input, text will be showned by default.";
+			cout << "Wrong input, sages text will be showned by default.";
 		displaySageText = true;
 	}
 
@@ -92,22 +89,25 @@ inline void App::getSageValues()
 
 inline void App::printSagesStatus()
 {
+	mtxPrint.lock();
+	cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished | \n";
+	mtxPrint.unlock();
 	while (true)
 	{
 		unsigned long hasFinished = 0;
 
-		mutex.lock();
-		cout << '\n' << "Status =  ( ";
+		mtxPrint.lock();
+		cout << '\n' << "Status = ( ";
 		for (unsigned long id = 0; id < nbSages; id++) {
 			if (sages[id].status == finished) hasFinished++;
 
-			SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1);
+			SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1); // changes text color (+1 to avoid black on black txt)
 			cout << (char)sages[id].status << " ";
 		}
 
-		SetConsoleTextAttribute(hConsole, 7);
+		SetConsoleTextAttribute(hConsole, 7); // 7 is default txt
 		cout << ")" << '\n' << std::endl;
-		mutex.unlock();
+		mtxPrint.unlock();
 
 		if (hasFinished == nbSages) {
 			for (unsigned long id = 0; id < nbSages; id++)

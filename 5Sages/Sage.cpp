@@ -12,9 +12,21 @@ std::thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
 	return std::thread([this] { behaviourUpdate(); }); // Googled
 }
 
+void Sage::setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax)
+{
+	timerThink = std::chrono::seconds((rand() % (thinkTimeMin * 10) + (thinkTimeMax * 10)) / 10);
+}
+
+void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax)
+{
+	this->eatingTotalTime = eatingTotalT;
+	this->eatingTimeMin = eatingTimeMin;
+	this->eatingTimeMax = eatingTimeMax;
+}
+
 void Sage::behaviourUpdate()
 {
-	while (isThinking || isWaiting || isEating)
+	while (isThinking || isWaiting || isEating) // thread loop
 	{
 		if (isThinking)
 			bThinking();
@@ -25,11 +37,12 @@ void Sage::behaviourUpdate()
 
 		std::this_thread::sleep_for(sleepTime);
 	}
+
 }
 
 void Sage::bThinking()
 {
-	if (timerThink.count() >= thinkTime) {
+	if (timerThink.count() <= 0.01) {
 		isWaiting = true;
 		isThinking = false;
 		status = waiting;
@@ -38,9 +51,9 @@ void Sage::bThinking()
 	}
 	else
 	{
-		print(" has been thinking for " + std::to_string(timerThink.count()) + "s");
+		print(" is thinking for " + std::to_string(timerThink.count()).erase(3) + "s");
 
-		timerThink += sleepTime;
+		timerThink -= sleepTime;
 	}
 }
 
@@ -55,9 +68,9 @@ void Sage::bWaiting()
 			isEating = true;
 			status = eating;
 
-			eatTime = (float)(rand() % sageEatingTimeMax + sageEatingTimeMin);
-			if (eatTime + timerEatingTotal > (float)sageEatingTotalTime)
-				eatTime = (float)sageEatingTotalTime - timerEatingTotal;
+			eatTime = (double)(rand() % (eatingTimeMax * 10) + (eatingTimeMin * 10)) / 10.0;
+			if (eatTime + timerEatingTotal > (double)eatingTotalTime)
+				eatTime = (double)eatingTotalTime - timerEatingTotal;
 		}
 		else
 		{
@@ -82,7 +95,7 @@ void Sage::bEating()
 
 		timerEatingTotal += timerEating.count();
 
-		if (timerEatingTotal >= sageEatingTotalTime)
+		if (timerEatingTotal >= eatingTotalTime)
 		{
 			isWaiting = false;
 			status = finished;
@@ -91,7 +104,7 @@ void Sage::bEating()
 		}
 		else
 		{
-			timerEating = std::chrono::duration<float>(0.f);
+			timerEating = std::chrono::duration<double>(0.0);
 
 			isWaiting = true;
 			status = waiting;
@@ -101,7 +114,7 @@ void Sage::bEating()
 	}
 	else
 	{
-		print(" has been eating for " + std::to_string(timerEating.count()) + "s");
+		print(" is eating for " + std::to_string(eatTime - timerEating.count()).erase(3) + "s");
 
 		timerEating += sleepTime;
 	}
@@ -113,7 +126,7 @@ void Sage::print(std::string txt)
 	{
 		mtxPrint->lock();
 		SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
-		std::cout << "Sage " << std::setw(3) << id;
+		std::cout << "Sage " << std::setw(4) << id;
 		SetConsoleTextAttribute(*hConsole, 7);
 		std::cout << txt << std::endl;
 		mtxPrint->unlock();

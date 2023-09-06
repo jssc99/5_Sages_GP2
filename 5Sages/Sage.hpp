@@ -21,25 +21,17 @@ enum Status
 class Sage
 {
 public:
-	Sage() {};
-	~Sage() {};
+	Sage() {}
+	~Sage() {}
 
 	unsigned long id = 0;
 	Status status = thinking;
 
-	std::chrono::duration<double> timerThink{ 0 };
-	double thinkTime = 0.f;
-
-	unsigned long sageEatingTotalTime = 0;
-	unsigned long sageEatingTimeMin = 0;
-	unsigned long sageEatingTimeMax = 0;
-
-	std::chrono::duration<double> timerEating{ 0 };
-	double timerEatingTotal = 0.f;
-	double eatTime = 0.f;
-
 	std::thread start(Chopstick* chopstick, Chopstick* nextChopstick,
 		std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
+
+	void setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax);
+	void setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax);
 
 private:
 	std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
@@ -56,6 +48,16 @@ private:
 	bool isThinking = true;
 	bool isWaiting = false;
 	bool isEating = false;
+
+	std::chrono::duration<double> timerThink{ 0.0 };
+
+	unsigned long eatingTotalTime = 0;
+	unsigned long eatingTimeMin = 0;
+	unsigned long eatingTimeMax = 0;
+
+	std::chrono::duration<double> timerEating{ 0.0 };
+	double timerEatingTotal = 0.0;
+	double eatTime = 0.0;
 
 	void behaviourUpdate();
 	void bThinking();

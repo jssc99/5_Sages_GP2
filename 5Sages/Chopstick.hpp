@@ -5,26 +5,17 @@
 
 class Chopstick
 {
-private:
-	bool isFree = true;
-	std::mutex* mtx = nullptr;
-
 public:
-	Chopstick() {};
-	~Chopstick() {};
-
-	bool kill = false;
+	Chopstick() {}
+	~Chopstick() {}
 
 	inline std::thread start()
 	{
 		mtx = new std::mutex;
 		return std::thread([this] { loop(); }); // Googled
-	};
-
-	inline void loop()
-	{
-		while (!kill) {};
 	}
+
+	bool kill = false;
 
 	inline bool getChopstick()
 	{
@@ -36,10 +27,20 @@ public:
 		else
 			return false;
 	}
+
 	inline void freeChopstick()
 	{
 		mtx->lock();
 		isFree = true;
 		mtx->unlock();
+	}
+
+private:
+	bool isFree = true;
+	std::mutex* mtx = nullptr;
+
+	inline void loop()
+	{
+		while (!kill) {};
 	}
 };
