@@ -1,7 +1,7 @@
 #include "Sage.hpp"
 
-std::thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
-	std::mutex& mtxPrint, HANDLE& hConsole, bool showText)
+thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
+	mutex& mtxPrint, HANDLE& hConsole, bool showText)
 {
 	this->chopstick = chopstick;
 	this->nextChopstick = nextChopstick;
@@ -9,12 +9,12 @@ std::thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
 	this->hConsole = &hConsole;
 	this->showText = showText;
 
-	return std::thread([this] { behaviourUpdate(); }); // Googled
+	return thread([this] { behaviourUpdate(); });
 }
 
 void Sage::setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax)
 {
-	timerThink = std::chrono::seconds((rand() % (thinkTimeMin * 10) + (thinkTimeMax * 10)) / 10);
+	timerThink = milliseconds((rand() % (thinkTimeMin * 10) + (thinkTimeMax * 10)) * 100);
 }
 
 void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax)
@@ -26,7 +26,7 @@ void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin
 
 void Sage::behaviourUpdate()
 {
-	while (isThinking || isWaiting || isEating) // thread loop
+	while (status != finished) // thread loop
 	{
 		if (isThinking)
 			bThinking();
@@ -37,7 +37,6 @@ void Sage::behaviourUpdate()
 
 		std::this_thread::sleep_for(sleepTime);
 	}
-
 }
 
 void Sage::bThinking()
@@ -104,7 +103,7 @@ void Sage::bEating()
 		}
 		else
 		{
-			timerEating = std::chrono::duration<double>(0.0);
+			timerEating = duration<double>(0.0);
 
 			isWaiting = true;
 			status = waiting;

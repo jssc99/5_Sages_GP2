@@ -1,36 +1,25 @@
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <chrono>
-#include <random>
-#include <string>
-#include <windows.h>
-
 #include "App.hpp"
 
 int main()
 {
-	App* app = new App(GetStdHandle(STD_OUTPUT_HANDLE));
+	SetConsoleTitleA("5 Sages");
+	char quit = 'r';
+	do {
+		system("cls");
 
-	for (unsigned long id = 0; id < app->nbSages; id++) {
-		app->chopsticksThrds[id] = app->chopsticks[id].start();
+		App* app = new App(GetStdHandle(STD_OUTPUT_HANDLE));
 
-		Sage* sage = &app->sages[id];
-		sage->id = id + 1;
-		sage->setEatingVars(app->sageEatingTotalTime, app->sageEatingTimeMin, app->sageEatingTimeMax);
-		sage->setThinkingTime(app->sageThinkTimeMax, app->sageThinkTimeMin);
+		std::thread appThrd = app->startApp();
 
-		app->sagesThrds[id] = app->sages[id].start(&app->chopsticks[id],
-			&app->chopsticks[(id + 1) % app->nbSages], app->mtxPrint, app->hConsole, app->displaySageText);
-	}
+		while (!app->isAppEnded()); // waiting for app to end
 
-	app->startStatusPrint().join();
+		appThrd.join();
 
-	for (unsigned long id = 0; id < app->nbSages; id++) {
-		app->sagesThrds[id].join();
-		app->chopsticksThrds[id].join();
-	}
+		SetConsoleTextAttribute(app->hConsole, 7); // just in case
 
-	SetConsoleTextAttribute(app->hConsole, 7);
+		cout << "\nType q to quit\nType r to restart\n";
+		cin >> quit;
+	} while (quit == 'r');
+
 	return (EXIT_SUCCESS);
 }

@@ -4,8 +4,6 @@
 #include <string>
 #include <windows.h>
 #include <iostream>
-#include <thread>
-#include <mutex>
 #include <iomanip>
 
 #include "Chopstick.hpp"
@@ -27,16 +25,16 @@ public:
 	unsigned long id = 0;
 	Status status = thinking;
 
-	std::thread start(Chopstick* chopstick, Chopstick* nextChopstick,
-		std::mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
+	thread start(Chopstick* chopstick, Chopstick* nextChopstick,
+		mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
 
 	void setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax);
 	void setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax);
 
 private:
-	std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
+	milliseconds sleepTime = milliseconds(100);
 	HANDLE* hConsole = nullptr;
-	std::mutex* mtxPrint = nullptr;
+	mutex* mtxPrint = nullptr;
 
 	Chopstick* chopstick = nullptr;
 	Chopstick* nextChopstick = nullptr;
@@ -49,13 +47,13 @@ private:
 	bool isWaiting = false;
 	bool isEating = false;
 
-	std::chrono::duration<double> timerThink{ 0.0 };
+	duration<double> timerThink{ 0.0 };
 
 	unsigned long eatingTotalTime = 0;
 	unsigned long eatingTimeMin = 0;
 	unsigned long eatingTimeMax = 0;
 
-	std::chrono::duration<double> timerEating{ 0.0 };
+	duration<double> timerEating{ 0.0 };
 	double timerEatingTotal = 0.0;
 	double eatTime = 0.0;
 

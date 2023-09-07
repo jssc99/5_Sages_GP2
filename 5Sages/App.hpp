@@ -1,31 +1,24 @@
 #pragma once
 
-#include <mutex>
-#include <thread>
-#include <iostream>
+#include <vector>
 
 #include "Sage.hpp"
 
-using std::cout;
-using std::cin;
+using std::vector;
 
 class App
 {
 public:
-	App(HANDLE console) : hConsole(console)
-	{
-		getSageValues();
-	}
+	App(HANDLE console) : hConsole(console) {}
 	~App() {}
 
-	std::mutex mtxPrint;
+	mutex mtxPrint;
 	HANDLE hConsole;
-	bool displaySageText = true;
 
-	std::vector<Sage> sages;
-	std::vector<std::thread> sagesThrds;
-	std::vector<Chopstick> chopsticks;
-	std::vector<std::thread> chopsticksThrds;
+	vector<Sage> sages;
+	vector<thread> sagesThrds;
+	vector<Chopstick> chopsticks;
+	vector<thread> chopsticksThrds;
 	unsigned long nbSages = 0;
 
 	unsigned long sageThinkTimeMin = 2; // old default values
@@ -35,17 +28,35 @@ public:
 	unsigned long sageEatingTimeMin = 1;
 	unsigned long sageEatingTimeMax = 5;
 
-	std::thread startStatusPrint();
+	thread startApp();
+
+	bool isAppEnded() const;
 
 private:
 	void getSageValues();
+	void startThreads();
+	void thrdWatcher();
 
 	void printSagesStatus();
+
+	bool firstDisplay = true;
+	bool displayOneLine = false;
+	bool displaySageText = true;
+
+	CONSOLE_SCREEN_BUFFER_INFO  cursorInfo{};
+
+	bool thrdsEnded = false;
+	bool appEnded = false;
 };
 
-inline std::thread App::startStatusPrint()
+inline thread App::startApp()
 {
-	return std::thread([this] { printSagesStatus(); }); // Googled
+	return thread([this] { getSageValues(); });
+}
+
+inline bool App::isAppEnded() const
+{
+	return appEnded;
 }
 
 inline void App::getSageValues()
@@ -75,46 +86,88 @@ inline void App::getSageValues()
 	cout << "Do you want to display every Sage actions ? y/n: ";
 	char displayText;
 	cin >> displayText;
-	if (displayText == 'n')
+	if (displayText == 'n' || displayText == '0')
+	{
 		displaySageText = false;
+		cout << "Do you want to the very fancy one line only display ? y/n: ";
+		cin >> displayText;
+		if (displayText == 'y' || displayText == '1')
+			displayOneLine = true;
+	}
 	else
 	{
-		if (displayText != 'y')
+		if (displayText != 'y' && displayText != '1')
 			cout << "Wrong input, sages text will be showned by default.";
 		displaySageText = true;
 	}
 
 	cout << std::endl;
+
+	startThreads();
+}
+
+inline void App::startThreads()
+{
+	for (unsigned long id = 0; id < nbSages; id++) {
+		chopsticksThrds[id] = chopsticks[id].start();
+
+		sages[id].id = id + 1;
+		sages[id].setEatingVars(sageEatingTotalTime, sageEatingTimeMin, sageEatingTimeMax);
+		sages[id].setThinkingTime(sageThinkTimeMax, sageThinkTimeMin);
+
+		sagesThrds[id] = sages[id].start(&chopsticks[id],
+			&chopsticks[(id + 1) % nbSages], mtxPrint, hConsole, displaySageText);
+	}
+
+	thrdWatcher();
+}
+
+inline void App::thrdWatcher()
+{
+	while (!thrdsEnded) {
+		unsigned long hasFinished = 0;
+		for (unsigned long id = 0; id < nbSages; id++)
+			if (sages[id].status == finished) hasFinished++;
+
+		if (hasFinished == nbSages) {
+			for (unsigned long id = 0; id < nbSages; id++)
+			{
+				sagesThrds[id].join();
+				chopsticksThrds[id].join();
+			}
+			thrdsEnded = true;
+			printSagesStatus();
+			appEnded = true;
+			return;
+		}
+
+		printSagesStatus();
+		std::this_thread::sleep_for(milliseconds(500));
+	}
 }
 
 inline void App::printSagesStatus()
 {
 	mtxPrint.lock();
-	cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished | \n";
-	mtxPrint.unlock();
-	while (true)
+	if (firstDisplay)
 	{
-		unsigned long hasFinished = 0;
-
-		mtxPrint.lock();
-		cout << '\n' << "Status = ( ";
-		for (unsigned long id = 0; id < nbSages; id++) {
-			if (sages[id].status == finished) hasFinished++;
-
-			SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1); // changes text color (+1 to avoid black on black txt)
-			cout << (char)sages[id].status << " ";
-		}
-
-		SetConsoleTextAttribute(hConsole, 7); // 7 is default txt
-		cout << ")" << '\n' << std::endl;
-		mtxPrint.unlock();
-
-		if (hasFinished == nbSages) {
-			for (unsigned long id = 0; id < nbSages; id++)
-				chopsticks[id].kill = true;
-			return;
-		}
-		else
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished | \n";
+		if (displayOneLine)
+			GetConsoleScreenBufferInfo(hConsole, &cursorInfo);
+		firstDisplay = false;
 	}
+
+	if (displayOneLine)
+		SetConsoleCursorPosition(hConsole, cursorInfo.dwCursorPosition);
+	cout << "\nStatus = ( ";
+	for (unsigned long id = 0; id < nbSages; id++) {
+		SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1); // changes text color (+1 to avoid black on black txt)
+		cout << (char)sages[id].status << " ";
+	}
+
+	SetConsoleTextAttribute(hConsole, 7); // 7 is default txt
+	cout << ")\n";
+	if (!displayOneLine) cout << '\n' << std::endl;
+
+	mtxPrint.unlock();
 }

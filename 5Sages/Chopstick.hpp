@@ -3,16 +3,25 @@
 #include <thread>
 #include <mutex>
 
+using std::thread;
+using std::mutex;
+
+using std::cout;
+using std::cin;
+
+using std::chrono::milliseconds;
+using std::chrono::duration;
+
 class Chopstick
 {
 public:
 	Chopstick() {}
 	~Chopstick() {}
 
-	inline std::thread start()
+	inline thread start()
 	{
-		mtx = new std::mutex;
-		return std::thread([this] { loop(); }); // Googled
+		mtx = new mutex;
+		return thread([this] {});
 	}
 
 	bool kill = false;
@@ -25,7 +34,9 @@ public:
 			return true;
 		}
 		else
+		{
 			return false;
+		}
 	}
 
 	inline void freeChopstick()
@@ -37,10 +48,5 @@ public:
 
 private:
 	bool isFree = true;
-	std::mutex* mtx = nullptr;
-
-	inline void loop()
-	{
-		while (!kill) {};
-	}
+	mutex* mtx = nullptr;
 };
