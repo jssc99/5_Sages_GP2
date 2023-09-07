@@ -121,9 +121,8 @@ void Sage::bEating()
 
 void Sage::print(std::string txt)
 {
-	if (showText)
+	if (showText && mtxPrint->try_lock())
 	{
-		mtxPrint->lock();
 		SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
 		std::cout << "Sage " << std::setw(4) << id;
 		SetConsoleTextAttribute(*hConsole, 7);

@@ -3,7 +3,7 @@
 int main()
 {
 	SetConsoleTitleA("5 Sages");
-	char quit = 'r';
+	std::string quit;
 	do {
 		system("cls");
 
@@ -15,11 +15,11 @@ int main()
 
 		appThrd.join();
 
-		SetConsoleTextAttribute(app->hConsole, 7); // just in case
+		SetConsoleTextAttribute(app->hConsole, 7);
 
-		cout << "\nType q to quit\nType r to restart\n";
+		cout << "\n\nType q to quit\nType r to restart\n";
 		cin >> quit;
-	} while (quit == 'r');
+	} while (quit == "r" || quit == "restart");
 
 	return (EXIT_SUCCESS);
 }

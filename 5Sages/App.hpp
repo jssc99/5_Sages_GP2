@@ -12,8 +12,14 @@ public:
 	App(HANDLE console) : hConsole(console) {}
 	~App() {}
 
-	mutex mtxPrint;
 	HANDLE hConsole;
+
+	thread startApp();
+
+	bool isAppEnded() const;
+
+private:
+	mutex mtxPrint;
 
 	vector<Sage> sages;
 	vector<thread> sagesThrds;
@@ -28,11 +34,6 @@ public:
 	unsigned long sageEatingTimeMin = 1;
 	unsigned long sageEatingTimeMax = 5;
 
-	thread startApp();
-
-	bool isAppEnded() const;
-
-private:
 	void getSageValues();
 	void startThreads();
 	void thrdWatcher();
@@ -42,8 +43,6 @@ private:
 	bool firstDisplay = true;
 	bool displayOneLine = false;
 	bool displaySageText = true;
-
-	CONSOLE_SCREEN_BUFFER_INFO  cursorInfo{};
 
 	bool thrdsEnded = false;
 	bool appEnded = false;
@@ -83,26 +82,28 @@ inline void App::getSageValues()
 	cout << "Enter sage maximum eating time (sec): ";
 	cin >> sageEatingTimeMax;
 
-	cout << "Do you want to display every Sage actions ? y/n: ";
+	cout << "Do you want to display every Sage actions ? y/n: "; // TODO + detailed action
 	char displayText;
 	cin >> displayText;
 	if (displayText == 'n' || displayText == '0')
 	{
 		displaySageText = false;
-		cout << "Do you want to the very fancy one line only display ? y/n: ";
-		cin >> displayText;
-		if (displayText == 'y' || displayText == '1')
-			displayOneLine = true;
 	}
 	else
 	{
 		if (displayText != 'y' && displayText != '1')
-			cout << "Wrong input, sages text will be showned by default.";
+			cout << "Wrong input, sages text will be showned by default.\n";
 		displaySageText = true;
 	}
+	cout << "Do you want to the very fancy autorefresh display ? y/n: ";
+	cin >> displayText;
+	if (displayText == 'y' || displayText == '1')
+		displayOneLine = true;
 
 	cout << std::endl;
+	system("cls");
 
+	printSagesStatus();
 	startThreads();
 }
 
@@ -149,25 +150,25 @@ inline void App::thrdWatcher()
 inline void App::printSagesStatus()
 {
 	mtxPrint.lock();
-	if (firstDisplay)
+
+	if (displayOneLine)
 	{
-		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished | \n";
-		if (displayOneLine)
-			GetConsoleScreenBufferInfo(hConsole, &cursorInfo);
+		system("cls");
+		cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
+	}
+	else if (firstDisplay)
+	{
+		cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
 		firstDisplay = false;
 	}
 
-	if (displayOneLine)
-		SetConsoleCursorPosition(hConsole, cursorInfo.dwCursorPosition);
 	cout << "\nStatus = ( ";
 	for (unsigned long id = 0; id < nbSages; id++) {
 		SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1); // changes text color (+1 to avoid black on black txt)
 		cout << (char)sages[id].status << " ";
 	}
-
 	SetConsoleTextAttribute(hConsole, 7); // 7 is default txt
-	cout << ")\n";
-	if (!displayOneLine) cout << '\n' << std::endl;
+	cout << ")\n" << std::endl;
 
 	mtxPrint.unlock();
 }
