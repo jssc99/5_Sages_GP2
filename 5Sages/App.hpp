@@ -29,16 +29,9 @@ private:
 	vector<thread> chopsticksThrds;
 	unsigned long nbSages = 0;
 
-	unsigned long sageThinkTimeMin = 2; // old default values
-	unsigned long sageThinkTimeMax = 5;
-
-	unsigned long sageEatingTotalTime = 5;
-	unsigned long sageEatingTimeMin = 1;
-	unsigned long sageEatingTimeMax = 5;
-
-	unsigned long settingNumber(string txt);
-	bool settingQuestion(string txt);
-	void getSageValues();
+	void setSageValues();
+	bool getAnswer(string txt);
+	unsigned long getNumber(string txt);
 
 	void startThreads();
 	void thrdWatcher();
@@ -47,16 +40,17 @@ private:
 
 	bool firstDisplay = true;
 	bool displayOneLine = false;
-	bool displayAllLogs = false;
-	bool displaySageText = true;
 
 	bool thrdsEnded = false;
 	bool appEnded = false;
+
+	unsigned long sageThinkTimeMin = 0;
+	unsigned long sageThinkTimeMax = 0;
 };
 
 inline thread App::startApp()
 {
-	return thread([this] { getSageValues(); });
+	return thread([this] { setSageValues(); });
 }
 
 inline bool App::isAppEnded() const
@@ -64,47 +58,40 @@ inline bool App::isAppEnded() const
 	return appEnded;
 }
 
-inline void App::getSageValues()
+inline void App::setSageValues()
 {
-	nbSages = settingNumber("Enter nb of sages: ");
+	nbSages = getNumber("Enter nb of sages: ");
 
-	sages.resize(nbSages);
+	unsigned long sageRefreshSpeed = getNumber("Enter sage refresh rate (per seconds)(5 to 10 is best): ");
+
+	sageThinkTimeMin = getNumber("Enter sage minimum thinking time (sec): ") * 1000;
+	sageThinkTimeMax = getNumber("Enter sage maximum thinking time (sec): ") * 1000;      // sec to ms
+
+	unsigned long sageEatingTotalTime = getNumber("Enter sage TOTAL eating time (sec): ");
+	unsigned long sageEatingTimeMin = getNumber("Enter sage minimum eating time (sec): ") * 1000;
+	unsigned long sageEatingTimeMax = getNumber("Enter sage maximum eating time (sec): ") * 1000;
+
+	bool displaySageText, displayAllLogs = false;
+	if (displaySageText = getAnswer("Do you want to display the Sages actions ? y/n: "))
+		displayAllLogs = getAnswer("Do you want a complete and detailed log of actions ? y/n: ");
+	displayOneLine = getAnswer("Do you want to the very fancy autorefresh display ? y/n: ");
+
+	Sage baseSage;
+	baseSage.setEatingVars(sageEatingTotalTime, sageEatingTimeMin, sageEatingTimeMax);
+	baseSage.setDisplayOptions(displaySageText, displayAllLogs);
+	baseSage.setPrintPointers(mtxPrint, hConsole);
+	baseSage.sleepTime = milliseconds((long long)((1.0 / sageRefreshSpeed) * 1000));
+
+	sages.resize(nbSages, baseSage);
 	sagesThrds.resize(nbSages);
 
 	chopsticks.resize(nbSages);
 	chopsticksThrds.resize(nbSages);
 
-	sageThinkTimeMin = settingNumber("Enter sage minimum thinking time (sec): ");
-	sageThinkTimeMax = settingNumber("Enter sage maximum thinking time (sec): ");
-
-	sageEatingTotalTime = settingNumber("Enter sage TOTAL eating time (sec): ");
-	sageEatingTimeMin = settingNumber("Enter sage minimum eating time (sec): ");
-	sageEatingTimeMax = settingNumber("Enter sage maximum eating time (sec): ");
-
-	displaySageText = settingQuestion("Do you want to display the Sages actions ? y/n: ");
-	if (displaySageText)
-		displayAllLogs = settingQuestion("Do you want a complete and detailed log of actions ? y/n: ");
-	displayOneLine = settingQuestion("Do you want to the very fancy autorefresh display ? y/n: ");
-
 	startThreads();
 }
 
-inline unsigned long App::settingNumber(string txt)
-{
-	do {
-		cout << txt;
-		unsigned long answer;
-		cin >> answer;
-		cin.clear();
-		cin.ignore(1000, '\n');
-		if (!answer)
-			cout << "Wrong input, try again.\n";
-		else
-			return answer;
-	} while (true);
-}
-
-inline bool App::settingQuestion(string txt)
+inline bool App::getAnswer(string txt)
 {
 	do {
 		cout << txt;
@@ -112,12 +99,29 @@ inline bool App::settingQuestion(string txt)
 		cin >> answer;
 		cin.clear();
 		cin.ignore(1000, '\n');
+
 		if (answer == 'n' || answer == '0')
 			return false;
 		else if (answer == 'y' || answer == '1')
 			return true;
-		else
+
+		cout << "Wrong input, try again.\n";
+	} while (true);
+}
+
+inline unsigned long App::getNumber(string txt)
+{
+	do {
+		cout << txt;
+		unsigned long answer;
+		cin >> answer;
+		cin.clear();
+		cin.ignore(1000, '\n');
+
+		if (!answer)
 			cout << "Wrong input, try again.\n";
+		else
+			return answer;
 	} while (true);
 }
 
@@ -129,12 +133,11 @@ inline void App::startThreads()
 		sages[id].id = id + 1;
 		sages[id].color = (id % 15) + 1;
 
-		sages[id].setEatingVars(sageEatingTotalTime, sageEatingTimeMin, sageEatingTimeMax);
-		sages[id].setThinkingTime(sageThinkTimeMax, sageThinkTimeMin);
+		sages[id].setThinkingTime(sageThinkTimeMin, sageThinkTimeMax);
 
-		sagesThrds[id] = sages[id].start(&chopsticks[id], &chopsticks[(id + 1) % nbSages],
-			mtxPrint, hConsole, displaySageText, displayAllLogs);
+		sagesThrds[id] = sages[id].start(&chopsticks[id], &chopsticks[(id + 1) % nbSages]);
 	}
+
 	printSagesStatus();
 	thrdWatcher();
 }
@@ -169,11 +172,11 @@ inline void App::printSagesStatus()
 	if (displayOneLine)
 	{
 		system("cls");
-		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
+		cout << "\n\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
 	}
 	else if (firstDisplay)
 	{
-		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
+		cout << "\n\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
 		firstDisplay = false;
 	}
 

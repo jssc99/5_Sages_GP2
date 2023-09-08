@@ -6,12 +6,6 @@
 using std::thread;
 using std::mutex;
 
-using std::cout;
-using std::cin;
-
-using std::chrono::milliseconds;
-using std::chrono::duration;
-
 class Chopstick
 {
 public:
@@ -23,8 +17,6 @@ public:
 		mtx = new mutex;
 		return thread([this] {});
 	}
-
-	bool kill = false;
 
 	inline bool getChopstick()
 	{

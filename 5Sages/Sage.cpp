@@ -1,21 +1,21 @@
 #include "Sage.hpp"
 
-thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
-	mutex& mtxPrint, HANDLE& hConsole, bool showText, bool fullLogs)
+thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick)
 {
 	this->chopstick = chopstick;
 	this->nextChopstick = nextChopstick;
-	this->mtxPrint = &mtxPrint;
-	this->hConsole = &hConsole;
-	this->showText = showText;
-	this->fullLogs = fullLogs;
 
 	return thread([this] { behaviourUpdate(); });
 }
 
+unsigned long random(unsigned long low, unsigned long high)
+{
+	return low + rand() % (high - low + 1);
+}
+
 void Sage::setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax)
 {
-	timerThink = milliseconds((rand() % (thinkTimeMin * 10) + (thinkTimeMax * 10)) * 100);
+	timerThink = milliseconds(random(thinkTimeMin, thinkTimeMax));
 }
 
 void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax)
@@ -23,6 +23,18 @@ void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin
 	this->eatingTotalTime = eatingTotalT;
 	this->eatingTimeMin = eatingTimeMin;
 	this->eatingTimeMax = eatingTimeMax;
+}
+
+void Sage::setDisplayOptions(bool showText, bool fullLogs)
+{
+	this->showText = showText;
+	this->fullLogs = fullLogs;
+}
+
+void Sage::setPrintPointers(mutex& mtxPrint, HANDLE& hConsole)
+{
+	this->mtxPrint = &mtxPrint;
+	this->hConsole = &hConsole;
 }
 
 void Sage::behaviourUpdate()
@@ -72,9 +84,9 @@ void Sage::bWaiting()
 			isEating = true;
 			status = eating;
 
-			eatTime = (double)(rand() % (eatingTimeMax * 10) + (eatingTimeMin * 10)) / 10.0;
-			if (eatTime + timerEatingTotal > (double)eatingTotalTime)
-				eatTime = (double)eatingTotalTime - timerEatingTotal;
+			eatTimeToDo = milliseconds(random(eatingTimeMin, eatingTimeMax)).count() / 1000.0;
+			if ((eatTimeToDo + eatingTotalTimer) > (double)eatingTotalTime)
+				eatTimeToDo = ((double)eatingTimeMax - eatingTotalTimer) / 1000.0;
 		}
 		else
 		{
@@ -92,16 +104,16 @@ void Sage::bWaiting()
 
 void Sage::bEating()
 {
-	if (timerEating.count() >= eatTime)
+	if (timerEating.count() >= eatTimeToDo)
 	{
 		isEating = false;
 
 		chopstick->freeChopstick();
 		nextChopstick->freeChopstick();
 
-		timerEatingTotal += timerEating.count();
+		eatingTotalTimer += timerEating.count();
 
-		if (timerEatingTotal >= eatingTotalTime)
+		if (eatingTotalTimer >= eatingTotalTime)
 		{
 			isWaiting = false;
 			status = finished;
@@ -121,7 +133,7 @@ void Sage::bEating()
 	else
 	{
 		if (fullLogs)
-			print(" is eating for " + std::to_string(eatTime - timerEating.count()).erase(3) + "s");
+			print(" is eating for " + std::to_string(eatTimeToDo - timerEating.count()).erase(3) + "s");
 
 		timerEating += sleepTime;
 	}
@@ -136,9 +148,9 @@ void Sage::print(std::string txt)
 		else if (!mtxPrint->try_lock()) return;
 
 		SetConsoleTextAttribute(*hConsole, color);
-		std::cout << "Sage " << std::setw(4) << id;
+		cout << "Sage " << std::setw(4) << id;
 		SetConsoleTextAttribute(*hConsole, 7);
-		std::cout << txt << std::endl;
+		cout << txt << std::endl;
 		mtxPrint->unlock();
 	}
 }

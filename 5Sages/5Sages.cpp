@@ -3,6 +3,7 @@
 int main()
 {
 	SetConsoleTitleA("5 Sages");
+
 	std::string quit;
 	do {
 		system("cls");
@@ -18,6 +19,7 @@ int main()
 		SetConsoleTextAttribute(app->hConsole, 7);
 
 		cout << "\n\nType q to quit\nType r to restart\n";
+		quit.clear();
 		cin >> quit;
 	} while (quit == "r" || quit == "restart");
 
