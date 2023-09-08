@@ -13,7 +13,7 @@ enum Status
 	thinking = 'T',
 	waiting = 'W',
 	eating = 'E',
-	finished = 'F',
+	finished = 'F'
 };
 
 class Sage
@@ -23,10 +23,11 @@ public:
 	~Sage() {}
 
 	unsigned long id = 0;
+	WORD color{};
 	Status status = thinking;
 
 	thread start(Chopstick* chopstick, Chopstick* nextChopstick,
-		mutex& mtxPrint, HANDLE& hConsole, bool showText = true);
+		mutex& mtxPrint, HANDLE& hConsole, bool showText, bool fullLogs);
 
 	void setThinkingTime(unsigned long thinkTimeMin, unsigned long thinkTimeMax);
 	void setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin, unsigned long eatingTimeMax);
@@ -40,6 +41,7 @@ private:
 	Chopstick* nextChopstick = nullptr;
 
 	bool showText = true;
+	bool fullLogs = false;
 
 	bool isChopstickFree = true;
 

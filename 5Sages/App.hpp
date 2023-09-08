@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <limits>
 
 #include "Sage.hpp"
 
 using std::vector;
+using std::string;
 
 class App
 {
@@ -34,7 +36,10 @@ private:
 	unsigned long sageEatingTimeMin = 1;
 	unsigned long sageEatingTimeMax = 5;
 
+	unsigned long settingNumber(string txt);
+	bool settingQuestion(string txt);
 	void getSageValues();
+
 	void startThreads();
 	void thrdWatcher();
 
@@ -42,6 +47,7 @@ private:
 
 	bool firstDisplay = true;
 	bool displayOneLine = false;
+	bool displayAllLogs = false;
 	bool displaySageText = true;
 
 	bool thrdsEnded = false;
@@ -60,8 +66,7 @@ inline bool App::isAppEnded() const
 
 inline void App::getSageValues()
 {
-	cout << "Enter nb of sages: ";
-	cin >> nbSages;
+	nbSages = settingNumber("Enter nb of sages: ");
 
 	sages.resize(nbSages);
 	sagesThrds.resize(nbSages);
@@ -69,42 +74,51 @@ inline void App::getSageValues()
 	chopsticks.resize(nbSages);
 	chopsticksThrds.resize(nbSages);
 
-	cout << "Enter sage minimum thinking time (sec): ";
-	cin >> sageThinkTimeMin;
-	cout << "Enter sage maximum thinking time (sec): ";
-	cin >> sageThinkTimeMax;
+	sageThinkTimeMin = settingNumber("Enter sage minimum thinking time (sec): ");
+	sageThinkTimeMax = settingNumber("Enter sage maximum thinking time (sec): ");
 
-	cout << "Enter sage TOTAL eating time (sec): ";
-	cin >> sageEatingTotalTime;
+	sageEatingTotalTime = settingNumber("Enter sage TOTAL eating time (sec): ");
+	sageEatingTimeMin = settingNumber("Enter sage minimum eating time (sec): ");
+	sageEatingTimeMax = settingNumber("Enter sage maximum eating time (sec): ");
 
-	cout << "Enter sage minimum eating time (sec): ";
-	cin >> sageEatingTimeMin;
-	cout << "Enter sage maximum eating time (sec): ";
-	cin >> sageEatingTimeMax;
+	displaySageText = settingQuestion("Do you want to display the Sages actions ? y/n: ");
+	if (displaySageText)
+		displayAllLogs = settingQuestion("Do you want a complete and detailed log of actions ? y/n: ");
+	displayOneLine = settingQuestion("Do you want to the very fancy autorefresh display ? y/n: ");
 
-	cout << "Do you want to display every Sage actions ? y/n: "; // TODO + detailed action
-	char displayText;
-	cin >> displayText;
-	if (displayText == 'n' || displayText == '0')
-	{
-		displaySageText = false;
-	}
-	else
-	{
-		if (displayText != 'y' && displayText != '1')
-			cout << "Wrong input, sages text will be showned by default.\n";
-		displaySageText = true;
-	}
-	cout << "Do you want to the very fancy autorefresh display ? y/n: ";
-	cin >> displayText;
-	if (displayText == 'y' || displayText == '1')
-		displayOneLine = true;
-
-	cout << std::endl;
-	system("cls");
-
-	printSagesStatus();
 	startThreads();
+}
+
+inline unsigned long App::settingNumber(string txt)
+{
+	do {
+		cout << txt;
+		unsigned long answer;
+		cin >> answer;
+		cin.clear();
+		cin.ignore(1000, '\n');
+		if (!answer)
+			cout << "Wrong input, try again.\n";
+		else
+			return answer;
+	} while (true);
+}
+
+inline bool App::settingQuestion(string txt)
+{
+	do {
+		cout << txt;
+		char answer;
+		cin >> answer;
+		cin.clear();
+		cin.ignore(1000, '\n');
+		if (answer == 'n' || answer == '0')
+			return false;
+		else if (answer == 'y' || answer == '1')
+			return true;
+		else
+			cout << "Wrong input, try again.\n";
+	} while (true);
 }
 
 inline void App::startThreads()
@@ -113,22 +127,26 @@ inline void App::startThreads()
 		chopsticksThrds[id] = chopsticks[id].start();
 
 		sages[id].id = id + 1;
+		sages[id].color = (id % 15) + 1;
+
 		sages[id].setEatingVars(sageEatingTotalTime, sageEatingTimeMin, sageEatingTimeMax);
 		sages[id].setThinkingTime(sageThinkTimeMax, sageThinkTimeMin);
 
-		sagesThrds[id] = sages[id].start(&chopsticks[id],
-			&chopsticks[(id + 1) % nbSages], mtxPrint, hConsole, displaySageText);
+		sagesThrds[id] = sages[id].start(&chopsticks[id], &chopsticks[(id + 1) % nbSages],
+			mtxPrint, hConsole, displaySageText, displayAllLogs);
 	}
-
+	printSagesStatus();
 	thrdWatcher();
 }
 
 inline void App::thrdWatcher()
 {
-	while (!thrdsEnded) {
+	do {
+		std::this_thread::sleep_for(milliseconds(500));
 		unsigned long hasFinished = 0;
 		for (unsigned long id = 0; id < nbSages; id++)
-			if (sages[id].status == finished) hasFinished++;
+			if (sages[id].status == finished)
+				hasFinished++;
 
 		if (hasFinished == nbSages) {
 			for (unsigned long id = 0; id < nbSages; id++)
@@ -137,14 +155,11 @@ inline void App::thrdWatcher()
 				chopsticksThrds[id].join();
 			}
 			thrdsEnded = true;
-			printSagesStatus();
-			appEnded = true;
-			return;
 		}
 
 		printSagesStatus();
-		std::this_thread::sleep_for(milliseconds(500));
-	}
+	} while (!thrdsEnded);
+	appEnded = true;
 }
 
 inline void App::printSagesStatus()
@@ -154,21 +169,24 @@ inline void App::printSagesStatus()
 	if (displayOneLine)
 	{
 		system("cls");
-		cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
+		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
 	}
 	else if (firstDisplay)
 	{
-		cout << " | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
+		cout << "\n | T = Thinking, W = Waiting, E = Eating, F = Finished |\n";
 		firstDisplay = false;
 	}
 
-	cout << "\nStatus = ( ";
-	for (unsigned long id = 0; id < nbSages; id++) {
-		SetConsoleTextAttribute(hConsole, sages[id].id % 15 + 1); // changes text color (+1 to avoid black on black txt)
-		cout << (char)sages[id].status << " ";
+	cout << "\nStatus = | ";
+
+	for (unsigned long id = 0; id < nbSages; id++)
+	{
+		SetConsoleTextAttribute(hConsole, sages[id].color); // changes text color
+		cout << (char)sages[id].status << ' ';
 	}
+
 	SetConsoleTextAttribute(hConsole, 7); // 7 is default txt
-	cout << ")\n" << std::endl;
+	cout << "|\n" << std::endl;
 
 	mtxPrint.unlock();
 }

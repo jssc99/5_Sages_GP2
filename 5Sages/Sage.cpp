@@ -1,13 +1,14 @@
 #include "Sage.hpp"
 
 thread Sage::start(Chopstick* chopstick, Chopstick* nextChopstick,
-	mutex& mtxPrint, HANDLE& hConsole, bool showText)
+	mutex& mtxPrint, HANDLE& hConsole, bool showText, bool fullLogs)
 {
 	this->chopstick = chopstick;
 	this->nextChopstick = nextChopstick;
 	this->mtxPrint = &mtxPrint;
 	this->hConsole = &hConsole;
 	this->showText = showText;
+	this->fullLogs = fullLogs;
 
 	return thread([this] { behaviourUpdate(); });
 }
@@ -26,6 +27,9 @@ void Sage::setEatingVars(unsigned long eatingTotalT, unsigned long eatingTimeMin
 
 void Sage::behaviourUpdate()
 {
+	if (!fullLogs)
+		print(" is thinking");
+
 	while (status != finished) // thread loop
 	{
 		if (isThinking)
@@ -50,7 +54,8 @@ void Sage::bThinking()
 	}
 	else
 	{
-		print(" is thinking for " + std::to_string(timerThink.count()).erase(3) + "s");
+		if (fullLogs)
+			print(" is thinking for " + std::to_string(timerThink.count()).erase(3) + "s");
 
 		timerThink -= sleepTime;
 	}
@@ -73,13 +78,15 @@ void Sage::bWaiting()
 		}
 		else
 		{
-			print(" is waiting (next sage doesnt have their chopstick free)");
+			if (fullLogs)
+				print(" is waiting (next sage doesnt have their chopstick free)");
 			chopstick->freeChopstick();
 		}
 	}
 	else
 	{
-		print(" is waiting, they dont have their chopstick");
+		if (fullLogs)
+			print(" is waiting, they dont have their chopstick");
 	}
 }
 
@@ -113,7 +120,8 @@ void Sage::bEating()
 	}
 	else
 	{
-		print(" is eating for " + std::to_string(eatTime - timerEating.count()).erase(3) + "s");
+		if (fullLogs)
+			print(" is eating for " + std::to_string(eatTime - timerEating.count()).erase(3) + "s");
 
 		timerEating += sleepTime;
 	}
@@ -121,9 +129,13 @@ void Sage::bEating()
 
 void Sage::print(std::string txt)
 {
-	if (showText && mtxPrint->try_lock())
+	if (showText)
 	{
-		SetConsoleTextAttribute(*hConsole, id % 15 + 1); // Sage id == Sage color
+		if (fullLogs)
+			mtxPrint->lock();
+		else if (!mtxPrint->try_lock()) return;
+
+		SetConsoleTextAttribute(*hConsole, color);
 		std::cout << "Sage " << std::setw(4) << id;
 		SetConsoleTextAttribute(*hConsole, 7);
 		std::cout << txt << std::endl;
