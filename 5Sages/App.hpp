@@ -44,6 +44,10 @@ private:
 	bool thrdsEnded = false;
 	bool appEnded = false;
 
+	const unsigned int sleepTime = 500;
+
+	duration<double> appTimer{ 0.0 };
+
 	unsigned long sageThinkTimeMin = 0;
 	unsigned long sageThinkTimeMax = 0;
 };
@@ -145,7 +149,9 @@ inline void App::startThreads()
 inline void App::thrdWatcher()
 {
 	do {
-		std::this_thread::sleep_for(milliseconds(500));
+		std::this_thread::sleep_for(milliseconds(sleepTime));
+		appTimer += milliseconds(sleepTime);
+
 		unsigned long hasFinished = 0;
 		for (unsigned long id = 0; id < nbSages; id++)
 			if (sages[id].status == finished)
@@ -162,6 +168,8 @@ inline void App::thrdWatcher()
 
 		printSagesStatus();
 	} while (!thrdsEnded);
+
+	cout << "App total runtime: " << appTimer.count() << "s";
 	appEnded = true;
 }
 
