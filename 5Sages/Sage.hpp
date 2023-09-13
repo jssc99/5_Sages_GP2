@@ -52,17 +52,11 @@ private:
 	bool showText = true;
 	bool fullLogs = false;
 
-	bool isChopstickFree = true;
-
-	bool isThinking = true;
-	bool isWaiting = false;
-	bool isEating = false;
-
 	duration<double> timerThink{ 0.0 };
 
 	unsigned long eatingTotalTime = 0;	// how long the sage needs to eat in total
-	unsigned long eatingTimeMin = 0;	// how long the sage can eat minimum
-	unsigned long eatingTimeMax = 0;	// how long the sage can eat maximum
+	unsigned long eatingTimeMin = 0;	// how long the sage can eat minimum in ms
+	unsigned long eatingTimeMax = 0;	// how long the sage can eat maximum in ms
 
 	duration<double> timerEating{ 0.0 }; // ongoing timer when sage is eating (timer starts at 0 and goes up)
 	double eatingTotalTimer = 0.0;		 // how long the sage has already ate in total (all timers added)

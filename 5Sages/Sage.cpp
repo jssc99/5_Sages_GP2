@@ -44,12 +44,14 @@ void Sage::behaviourUpdate()
 
 	while (status != finished) // thread loop
 	{
-		if (isThinking)
+		if (status == thinking)
 			bThinking();
-		else if (isWaiting)
+		else if (status == waiting)
 			bWaiting();
-		else if (isEating)
+		else if (status == eating)
 			bEating();
+		else 
+			return;
 
 		std::this_thread::sleep_for(sleepTime);
 	}
@@ -58,17 +60,13 @@ void Sage::behaviourUpdate()
 void Sage::bThinking()
 {
 	if (timerThink.count() <= 0.01) {
-		isWaiting = true;
-		isThinking = false;
 		status = waiting;
-
 		print(" has stopped thinking");
 	}
 	else
 	{
 		if (fullLogs)
 			print(" is thinking for " + std::to_string(timerThink.count()).erase(3) + "s");
-
 		timerThink -= sleepTime;
 	}
 }
@@ -79,14 +77,11 @@ void Sage::bWaiting()
 	{
 		if (nextChopstick->getChopstick()) {
 			print(" has got their two chopsticks");
-
-			isWaiting = false;
-			isEating = true;
 			status = eating;
 
 			eatTimeToDo = milliseconds(random(eatingTimeMin, eatingTimeMax)).count() / 1000.0;
 			if ((eatTimeToDo + eatingTotalTimer) > (double)eatingTotalTime)
-				eatTimeToDo = ((double)eatingTimeMax - eatingTotalTimer) / 1000.0;
+				eatTimeToDo = ((double)eatingTotalTime - eatingTotalTimer);
 		}
 		else
 		{
@@ -106,8 +101,6 @@ void Sage::bEating()
 {
 	if (timerEating.count() >= eatTimeToDo)
 	{
-		isEating = false;
-
 		chopstick->freeChopstick();
 		nextChopstick->freeChopstick();
 
@@ -115,18 +108,14 @@ void Sage::bEating()
 
 		if (eatingTotalTimer >= eatingTotalTime)
 		{
-			isWaiting = false;
 			status = finished;
-
 			print(" has finished eating");
 		}
 		else
 		{
 			timerEating = duration<double>(0.0);
 
-			isWaiting = true;
 			status = waiting;
-
 			print(" has stopped eating");
 		}
 	}
